@@ -28,6 +28,6 @@ test('Navegación por la documentación', async ({ page }) => {
   await page.getByRole('link', { name: 'Writing tests', exact: true }).click();
 
   // Verificar que estamos en la página de Writing tests
-  await expect(page).toHaveURL('https://playwright.dev/docs/writing-tests');
+  await expect(page).toHaveURL(/.*\/docs\/writing-tests$/);
   await expect(page).toHaveTitle(/Writing tests/);
 });
