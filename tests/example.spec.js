@@ -22,7 +22,7 @@ test.describe('Ambassadors', () => {
     await expect(page.getByText('Stefan Judis')).toBeVisible();
   });
 
-  test('incluye a Alemania', async ({ page }) => {
+  test('incluye a Germany', async ({ page }) => {
     await expect(page.getByText('Germany')).toBeVisible();
   });
   test('incluye a Tally Barak', async ({ page }) => {
