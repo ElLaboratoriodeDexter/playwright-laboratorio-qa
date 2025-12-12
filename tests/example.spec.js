@@ -31,4 +31,4 @@ test.describe('Ambassadors', () => {
   test('incluye a Israel', async ({ page }) => {
     await expect(page.getByText('Israel')).toBeVisible();
   });
-}); 
+});
