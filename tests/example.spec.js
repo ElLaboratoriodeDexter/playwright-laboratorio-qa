@@ -28,5 +28,12 @@ test.describe('Ambassadors', () => {
   test('incluye a Tally Barak', async ({ page }) => {
     await expect(page.getByText('Tally Barak')).toBeVisible();
   });
+  test('incluye a Tally Barak', async ({ page }) => {
+    await expect(page.getByText('Tally Barak')).toBeVisible();
+  });
+
+  test('incluye a Israel', async ({ page }) => {
+    await expect(page.getByText('Israel')).toBeVisible();
+  });
 
 });
