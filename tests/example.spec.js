@@ -13,6 +13,30 @@ test('Ambassadors incluye a Carlos Gauto de Argentina', async ({ page }) => {
   await expect(page.getByText('Argentina')).toBeVisible();
 });
 
+test('has title', async ({ page }) => {
+  await page.goto('https://playwright.dev/');
+
+  // Expect a title "to contain" a substring.
+  await expect(page).toHaveTitle(/Playwright/);
+});
+
+test('get started link', async ({ page }) => {
+  await page.goto('https://playwright.dev/');
+
+  // Click the get started link.
+  await page.getByRole('link', { name: 'Get started' }).click();
+
+  // Expects page to have a heading with the name of Installation.
+  await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
+});
+
+test('check search input visibility', async ({ page }) => {
+  await page.goto('https://playwright.dev/');
+
+  // Expect the search button to be visible
+  await expect(page.getByLabel('Search')).toBeVisible();
+});
+
 test('el enlace Get started redirige a la página de instalación', async ({ page }) => {
   await page.goto('https://playwright.dev/');
   await page.getByRole('link', { name: 'Get started' }).click();
