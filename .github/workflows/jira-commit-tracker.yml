@@ -3,9 +3,7 @@ name: Jira Commit Tracker
 on:
   push:
     branches:
-      - main
-      - master
-      - 'feature/*'
+      - '**' # Esto hará que funcione en cualquier rama que subas
 
 jobs:
   track-commits:
