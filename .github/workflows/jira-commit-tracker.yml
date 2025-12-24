@@ -1,0 +1,126 @@
+name: Jira Commit Tracker
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'feature/*'
+
+jobs:
+  track-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Importante para leer el historial de commits
+
+      - name: Update Jira Commit Count
+        uses: actions/github-script@v7
+        env:
+          JIRA_BASE_URL: 'https://ywindecker.atlassian.net' # Ajusta esto a tu URL real
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER }} # Usamos el nombre que ya tienen
+          JIRA_API_TOKEN: ${{ secrets.JIRA_TOKEN }} # Usamos el nombre que ya tienen
+          FIELD_NAME: 'Cantidad de Commits'
+        with:
+          script: |
+            const commits = context.payload.commits;
+            if (!commits || commits.length === 0) {
+              console.log("No commits found in this push.");
+              return;
+            }
+
+            // Configuración de autenticación
+            const auth = Buffer.from(`${process.env.JIRA_USER_EMAIL}:${process.env.JIRA_API_TOKEN}`).toString('base64');
+            const headers = {
+              'Authorization': `Basic ${auth}`,
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            };
+
+            // 1. BUSCAR EL ID DEL CAMPO AUTOMÁTICAMENTE
+            let customFieldId = null;
+            try {
+              const fieldsResponse = await fetch(`${process.env.JIRA_BASE_URL}/rest/api/3/field`, { headers });
+              const fields = await fieldsResponse.json();
+              const targetField = fields.find(f => f.name === process.env.FIELD_NAME);
+              
+              if (!targetField) {
+                console.error(`❌ Error: No se encontró un campo llamado "${process.env.FIELD_NAME}" en Jira.`);
+                return;
+              }
+              customFieldId = targetField.id;
+              console.log(`✅ Campo encontrado: ${process.env.FIELD_NAME} tiene el ID: ${customFieldId}`);
+            } catch (error) {
+              console.error("❌ Error al consultar los campos de Jira:", error);
+              return;
+            }
+
+            // 2. Extraer claves de Jira únicas de los mensajes de commit
+            const issueKeys = new Set();
+            const jiraKeyRegex = /[A-Z]+-\d+/g;
+
+            for (const commit of commits) {
+              const matches = commit.message.match(jiraKeyRegex);
+              if (matches) {
+                matches.forEach(key => issueKeys.add(key));
+              }
+            }
+
+            if (issueKeys.size === 0) {
+              console.log("No Jira keys found in commit messages.");
+              return;
+            }
+
+            // 3. Procesar cada issue encontrada
+            for (const issueKey of issueKeys) {
+              try {
+                const getUrl = `${process.env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}?fields=${customFieldId}`;
+                const getResponse = await fetch(getUrl, { headers });
+                
+                if (!getResponse.ok) {
+                  console.error(`Failed to fetch issue ${issueKey}: ${getResponse.statusText}`);
+                  continue;
+                }
+
+                const issueData = await getResponse.json();
+                const currentVal = issueData.fields[customFieldId] || 0;
+                const newVal = currentVal + 1;
+
+                console.log(`Issue ${issueKey}: Current commits = ${currentVal}. Updating to ${newVal}...`);
+
+                // --- LÓGICA DE SQUAD (COMENTADA PARA PRUEBAS) ---
+                /*
+                const squadFieldName = 'Squad'; // Nombre del campo en Jira de la empresa
+                const fieldsResponse = await fetch(`${process.env.JIRA_BASE_URL}/rest/api/3/field`, { headers });
+                const fields = await fieldsResponse.json();
+                const squadField = fields.find(f => f.name === squadFieldName);
+                
+                let updateFields = { [customFieldId]: newVal };
+                
+                if (squadField) {
+                  // Aquí podrías definir el squad dinámicamente o por repo
+                  updateFields[squadField.id] = { value: 'Steel Pulse' }; 
+                }
+                */
+                // -----------------------------------------------
+
+                const updateUrl = `${process.env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}`;
+                const updateResponse = await fetch(updateUrl, {
+                  method: 'PUT',
+                  headers,
+                  body: JSON.stringify({
+                    fields: { [customFieldId]: newVal } // Si activas Squad, cambia esto por 'fields: updateFields'
+                  })
+                });
+
+                if (updateResponse.ok) {
+                  console.log(`Successfully updated ${issueKey} to ${newVal} commits.`);
+                } else {
+                  console.error(`Failed to update ${issueKey}: ${updateResponse.status}`);
+                }
+              } catch (error) {
+                console.error(`Error processing ${issueKey}:`, error);
+              }
+            }
