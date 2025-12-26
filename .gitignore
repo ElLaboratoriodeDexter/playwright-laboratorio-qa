@@ -17,7 +17,6 @@ coverage/
 reports/
 
 # Editor directories
-.vscode/
 .idea/
 
 # OS files
