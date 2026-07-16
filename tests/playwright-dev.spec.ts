@@ -9,7 +9,7 @@ test.describe('playwright.dev smoke tests', () => {
   });
 
   test('search works in docs', async ({ page }) => {
-    await page.goto('https://playwright.dev');
+  
     // Open search (cmd/ctrl+K) — fallback to clicking search button if any
     const searchButton = page.locator('[aria-label="Search"]');
     if (await searchButton.count() > 0) {
